@@ -11,6 +11,11 @@ display = PyGameDisplay(width=128, height=128)
 splash = displayio.Group()
 display.show(splash)
 
+# Variables
+frame = 0
+speed = 7
+game_over = False
+
 # Background sprite
 bg_sheet = displayio.OnDiskBitmap("sprites/home.bmp")
 bg_sprite = displayio.TileGrid(
@@ -24,10 +29,9 @@ bg_sprite = displayio.TileGrid(
     x=(display.width - 128) // 2,
     y=display.height - 128 - 0
     )
-splash.append(bg_sprite)
 
 # Eevee sprite
-eevee_sheet = displayio.OnDiskBitmap("sprites/EeveeIdle.bmp")
+eevee_sheet = displayio.OnDiskBitmap("sprites/idleeevee.bmp")
 eevee_sprite = displayio.TileGrid(
     eevee_sheet,
     pixel_shader=eevee_sheet.pixel_shader,
@@ -39,7 +43,48 @@ eevee_sprite = displayio.TileGrid(
     x=(display.width - 32) // 2,  
     y=display.height - 32 - 10     
 )
-splash.append(eevee_sprite)
+
+# Flareon sprite
+flareon_sheet = displayio.OnDiskBitmap("sprites/idleflareon.bmp")
+flareon_sprite = displayio.TileGrid(
+    flareon_sheet,
+    pixel_shader=flareon_sheet.pixel_shader,
+    width=1,
+    height=1,
+    tile_width=32,
+    tile_height=32,
+    default_tile=0,
+    x=(display.width - 32) // 2,  
+    y=display.height - 32 - 10     
+)
+
+# Jolteon sprite
+jolteon_sheet = displayio.OnDiskBitmap("sprites/idlejolteon.bmp")
+jolteon_sprite = displayio.TileGrid(
+    jolteon_sheet,
+    pixel_shader=jolteon_sheet.pixel_shader,
+    width=1,
+    height=1,
+    tile_width=32,
+    tile_height=32,
+    default_tile=0,
+    x=(display.width - 32) // 2,  
+    y=display.height - 32 - 10     
+)
+
+# Vaporeon sprite
+vaporeon_sheet = displayio.OnDiskBitmap("sprites/idlevaporeon.bmp")
+vaporeon_sprite = displayio.TileGrid(
+    vaporeon_sheet,
+    pixel_shader=vaporeon_sheet.pixel_shader,
+    width=1,
+    height=1,
+    tile_width=32,
+    tile_height=32,
+    default_tile=0,
+    x=(display.width - 32) // 2,  
+    y=display.height - 32 - 10     
+)
 
 # Dropping objects
 electric_bitmap = displayio.OnDiskBitmap("sprites/biscuits/electric.bmp")
@@ -47,9 +92,47 @@ fire_bitmap = displayio.OnDiskBitmap("sprites/biscuits/fire.bmp")
 water_bitmap = displayio.OnDiskBitmap("sprites/biscuits/water.bmp")
 fireball_bitmap = displayio.OnDiskBitmap("sprites/chocolate.bmp")
 
+# Start screen
+start_sheet = displayio.OnDiskBitmap("sprites/start.bmp")
+start_sprite = displayio.TileGrid(
+    start_sheet,
+    pixel_shader=bg_sheet.pixel_shader,
+    width=1,
+    height=1,
+    tile_width=128,
+    tile_height=128,
+    default_tile=0,
+    x=(display.width - 128) // 2,
+    y=display.height - 128 - 0
+)
+
+# Restart sprite
+restart = displayio.OnDiskBitmap("sprites/restart.bmp")
+
+
 fireballs = []
 biscuits = []
 
+screen = 1 # 1: Start screen, 2: Main game
+
+# Sprite changes
+flareon = 0
+jolteon = 0
+vaporeon = 0
+global active_sprite
+active_sprite = eevee_sprite
+global flareon_swapped
+flareon_swapped = False
+global jolteon_swapped
+jolteon_swapped = False
+global vaporeon_swapped
+vaporeon_swapped = False
+
+# Function to display the start screen
+def display_start_screen():
+    splash.append(start_sprite)
+
+# Function to spawn chocolate
 def spawn_fireball():
     x_position = random.randint(0, display.width - fireball_bitmap.width)
     fireball = displayio.TileGrid(
@@ -65,6 +148,7 @@ def spawn_fireball():
     fireballs.append(fireball)
     splash.append(fireball)
 
+# Function to spawn electric biscuits
 def spawn_electric():
     x_position = random.randint(0, display.width - electric_bitmap.width)
     electric = displayio.TileGrid(
@@ -80,6 +164,7 @@ def spawn_electric():
     biscuits.append(electric)
     splash.append(electric)
 
+# Function to spawn water biscuits
 def spawn_water():
     x_position = random.randint(0, display.width - water_bitmap.width)
     water = displayio.TileGrid(
@@ -95,6 +180,7 @@ def spawn_water():
     biscuits.append(water)
     splash.append(water)
 
+# Function to spawn fire biscuits
 def spawn_fire():
     x_position = random.randint(0, display.width - fire_bitmap.width)
     fire = displayio.TileGrid(
@@ -119,7 +205,7 @@ def check_collision(sprite1, sprite2):
         sprite1.y + 32 > sprite2.y
     )
 
-restart = displayio.OnDiskBitmap("sprites/restart.bmp")
+display_start_screen()
 
 def display_death():
     global death
@@ -142,12 +228,7 @@ def display_death():
         splash.remove(i)
     biscuits.clear()
 
-frame = 0
-speed = 5
-game_over = False
-
 while True:
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -159,15 +240,21 @@ while True:
                 fireballs.clear()
                 splash.remove(death)
                 game_over = False
+        elif event.type == pygame.KEYUP:
+            if event.key == pygame.K_UP and screen == 1:
+                splash.remove(start_sprite)
+                splash.append(bg_sprite)
+                splash.append(active_sprite)
+                screen = 2
 
 
     keys = pygame.key.get_pressed()
 
-    if game_over == False:
-        if keys[pygame.K_LEFT]:
-            eevee_sprite.x -= speed
-        if keys[pygame.K_RIGHT]:
-            eevee_sprite.x += speed
+    if screen == 2 and game_over == False:
+        if keys[pygame.K_LEFT] and active_sprite.x > 0:
+            active_sprite.x -= speed
+        if keys[pygame.K_RIGHT] and active_sprite.x < 98:
+            active_sprite.x += speed
         if random.random() < 0.026:  # spawn rate
             spawn_fireball()
         if random.random() < 0.025:
@@ -182,27 +269,38 @@ while True:
         if fireball.y > display.height:
             splash.remove(fireball)
             fireballs.remove(fireball)
-        elif check_collision(eevee_sprite, fireball):
+        elif check_collision(active_sprite, fireball):
             game_over = True
             display_death()
+            splash.remove(active_sprite)
+            splash.append(eevee_sprite)
+            active_sprite = eevee_sprite
+            flareon_swapped = False
+            jolteon_swapped = False
+            vaporeon_swapped = False
+            flareon = 0
+            jolteon = 0
+            vaporeon = 0
 
     for electric in biscuits:
         electric.y += 3 
         if electric.y > display.height:
             splash.remove(electric)
             biscuits.remove(electric)
-        elif check_collision(eevee_sprite, electric):
+        elif check_collision(active_sprite, electric):
             splash.remove(electric)
             biscuits.remove(electric)
+            jolteon += 1
 
     for water in biscuits:
         water.y += 3 
         if water.y > display.height:
             splash.remove(water)
             biscuits.remove(water)
-        elif check_collision(eevee_sprite, water):
+        elif check_collision(active_sprite, water):
             splash.remove(water)
             biscuits.remove(water)
+            vaporeon += 1
 
 
     for fire in biscuits:
@@ -210,13 +308,46 @@ while True:
         if fire.y > display.height:
             splash.remove(fire)
             biscuits.remove(fire)
-        elif check_collision(eevee_sprite, fire):
+        elif check_collision(active_sprite, fire):
             splash.remove(fire)
             biscuits.remove(fire)
+            flareon += 1
+    
+    if flareon >= 6 and flareon_swapped == False:
+        flareon_sprite.x = active_sprite.x
+        flareon_sprite.y = active_sprite.y
+        splash.remove(active_sprite)
+        splash.append(flareon_sprite)
+        active_sprite = flareon_sprite
+        flareon_swapped = True
 
-    eevee_sprite[0] = frame
+    if jolteon >= 6 and jolteon_swapped == False:
+        jolteon_sprite.x = active_sprite.x
+        jolteon_sprite.y = active_sprite.y
+        splash.remove(active_sprite)
+        splash.append(jolteon_sprite)
+        active_sprite = jolteon_sprite
+        jolteon_swapped = True
+
+    if vaporeon >= 6 and vaporeon_swapped == False:
+        vaporeon_sprite.x = active_sprite.x
+        vaporeon_sprite.y = active_sprite.y
+        splash.remove(active_sprite)
+        splash.append(vaporeon_sprite)
+        active_sprite = vaporeon_sprite
+        vaporeon_swapped = True
+    
+    # Animation
+    if active_sprite == eevee_sprite:
+        eevee_sprite[0] = frame
+    elif active_sprite == flareon_sprite:
+        flareon_sprite[0] = frame
+    elif active_sprite == jolteon_sprite:
+        jolteon_sprite[0] = frame
+    elif active_sprite == vaporeon_sprite:
+        vaporeon_sprite[0] = frame
+    
     frame = (frame + 1) % 4
-
     bg_sprite[0] = frame
     frames = (frame + 1) % 4
 
